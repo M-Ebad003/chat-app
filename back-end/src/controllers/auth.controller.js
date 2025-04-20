@@ -1,6 +1,7 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -41,7 +42,7 @@ export const signup = async (req, res) => {
         id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
-        profilePic: newUser.profilepic,
+        profilePic: newUser.profilePic,
       });
     } else {
       res.status(400).json({
@@ -55,6 +56,7 @@ export const signup = async (req, res) => {
     });
   }
 };
+
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -73,12 +75,13 @@ export const login = async (req, res) => {
     }
 
     generateToken(user?._id, res);
+
     res.status(200).json({
       message: "Login Successfully",
       _id: user?._id,
       fullName: user?.fullName,
       email: user.email,
-      profilePic: user.profilepic,
+      profilePic: user.profilePic,
     });
   } catch (error) {
     console.log("error in sign-in controller", error);
@@ -87,6 +90,7 @@ export const login = async (req, res) => {
     });
   }
 };
+
 export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", {
@@ -101,7 +105,40 @@ export const logout = (req, res) => {
   }
 };
 
+export const updateProfile = async (req, res) => {
+  const { profilePic } = req.body;
+  try {
+    const userId = req.user._id;
+    if (!profilePic) {
+      res.status(400).json({
+        message: "Profile pic is required",
+      });
+    }
+    const cloudinaryRes = await cloudinary.uploader.upload(profilePic);
+    const updateUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        profilePic: cloudinaryRes.secure_url,
+      },
+      { new: true }
+    );
 
-export const updateProfile = async(req,res)=>{
+    return res.status(200).json(updateUser);
+  } catch (error) {
+    console.log("error while updating profile pic", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
 
-}
+export const checAuth = async (req, res) => {
+  try {
+    res.status(200).json(req.user);
+  } catch (error) {
+    console.log("error in auth controller", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
