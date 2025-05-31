@@ -13,4 +13,5 @@ export default defineConfig({
     },
   },
   plugins: [react(), tailwindcss()],
+  // themes: ["light", "dark", "cupcake", "retro"],
 });
